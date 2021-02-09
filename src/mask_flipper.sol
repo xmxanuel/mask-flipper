@@ -1,5 +1,7 @@
 pragma solidity ^0.6.7;
 
+import "../lib/ds-test/src/test.sol";
+
 interface NFTX  {
     function mint(uint256 vaultId, uint256[] calldata nftIds, uint256 d2Amount) external;
 }
@@ -25,7 +27,9 @@ interface SushiRouter {
         address to,
         uint deadline) external returns (uint[] memory amounts);
 }
-contract MaskFlipper {
+
+import "ds-test/test.sol";
+contract MaskFlipper is DSTest {
     uint constant public ONE = 10**27;
     uint constant public ONE_MASK_TOKEN = 1 ether;
     // Hashmasks vault id
@@ -49,7 +53,6 @@ contract MaskFlipper {
     // denominated in RAY (10^27)
     uint public payoutRate = ONE;
 
-    uint constant public SUSHI_AMOUNT_OUT_MIN= 0.5 * 10**27;
     address public owner;
 
     constructor(address nftx_, address sushiRouter_, address hashmasks_, address maskToken_, address weth_) public {
@@ -73,7 +76,7 @@ contract MaskFlipper {
         path[0] = address(maskToken);
         path[1] = address(weth);
 
-        return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path)[0];
+        return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path)[1];
     }
 
     // flip a mask against the current floor price in NFTX
@@ -95,9 +98,11 @@ contract MaskFlipper {
         path[0] = address(maskToken);
         path[1] = address(weth);
 
-        uint amountOutMin = rmul(_currentFloorPrice(), SUSHI_AMOUNT_OUT_MIN);
+        uint wantPrice = _currentFloorPrice();
 
-        uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, amountOutMin, path, address(this), block.timestamp+1)[1];
+        uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, 0, path, address(this), block.timestamp+1)[1];
+
+        require(price >= wantPrice, "received WETH amount from sushi-swap too low");
 
         weth.transferFrom(address(this), msg.sender, rmul(price, payoutRate));
     }

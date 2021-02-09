@@ -76,7 +76,7 @@ contract MaskFlipperTest is DSTest {
     }
 
     function testFlipMask() public {
-        uint expectedMinBalance =  rmul(flipper.currentFloorPrice(), flipper.SUSHI_AMOUNT_OUT_MIN());
+        uint expectedMinBalance = flipper.currentFloorPrice();
         uint nftID = setUpHashMask();
         // test contract should own a mask
         assertEq(ERC721(flipper.hashmasks()).ownerOf(nftID), address(this));
