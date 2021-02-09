@@ -23,7 +23,17 @@ interface ERC20Like {
 
 // RPC Test for Mainnet
 contract MaskFlipperTest is DSTest {
+    // math
+    uint constant public ONE = 10**27;
+    function rmul(uint x, uint y) public pure returns (uint z) {
+        z = safeMul(x, y) / ONE;
+    }
+    function safeMul(uint x, uint y) public pure returns (uint z) {
+        require(y == 0 || (z = x * y) / y == x, "safe-mul-failed");
+    }
+
     MaskFlipper flipper;
+    // mainnet contracts
     address constant MASK_TOKEN = 0x0fe629d1E84E171f8fF0C1Ded2Cc2221Caa48a3f;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant NFTX = 0xAf93fCce0548D3124A5fC3045adAf1ddE4e8Bf7e;
@@ -66,9 +76,10 @@ contract MaskFlipperTest is DSTest {
     }
 
     function testFlipMask() public {
+        uint expectedMinBalance =  rmul(flipper.currentFloorPrice(), flipper.SUSHI_AMOUNT_OUT_MIN());
         uint nftID = setUpHashMask();
-        // test contract should own mask
-        assertEq(ERC721(ERC721_HASHMASKS).ownerOf(nftID), address(this));
+        // test contract should own a mask
+        assertEq(ERC721(flipper.hashmasks()).ownerOf(nftID), address(this));
 
         ERC721(flipper.hashmasks()).approve(address(flipper), nftID);
 
@@ -76,7 +87,6 @@ contract MaskFlipperTest is DSTest {
 
         uint balance = ERC20Like(WETH).balanceOf(address(this));
 
-        emit log_named_uint("balance", balance);
-        assertTrue(false);
+        assertTrue(balance >= expectedMinBalance);
     }
 }
