@@ -11,16 +11,13 @@ interface ERC721 {
 
 interface ERC20 {
     function approve(address usr, uint amount)  external;
+    function transferFrom(address from, address to, uint amount) external;
+    function balanceOf(address usr) external returns(uint amount);
 }
 
 interface SushiRouter {
-    function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
-    external
-    returns (uint[] memory amounts);
-
     function getAmountsOut(uint256 amount, address[] calldata path) external view returns(uint[] memory);
-
-    function swapTokensForExactTokens(
+    function    swapTokensForExactTokens(
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
@@ -29,7 +26,6 @@ interface SushiRouter {
     ) external returns (uint[] memory amounts);
 }
 contract MaskFlipper {
-
     uint constant public ONE = 10**27;
     uint constant public ONE_MASK_TOKEN = 10**18;
     // Hashmasks vault id
@@ -49,7 +45,9 @@ contract MaskFlipper {
     ERC20 public maskToken;
     address public weth;
 
-    uint public fee = ONE;
+    // default 100% payout => no fee
+    // denominated in RAY (10^27)
+    uint public payoutRate = ONE;
 
     address public owner;
 
@@ -61,11 +59,15 @@ contract MaskFlipper {
         maskToken = ERC20(maskToken_);
         weth = weth_;
 
-        maskToken.approve(address(nftx), uint(-1));
+        maskToken.approve(address(sushiRouter), uint(-1));
     }
 
     // returns the current amount of ETH in exchange for a mask
     function currentFloorPrice() public view returns(uint) {
+        return rmul(_currentFloorPrice(), payoutRate);
+    }
+
+    function _currentFloorPrice() internal view returns (uint) {
         address[] memory path = new address[](2);
         path[0] = address(maskToken);
         path[1] = address(weth);
@@ -84,15 +86,28 @@ contract MaskFlipper {
         uint256[] memory list = new uint256[](1);
         list[0] = nftID;
 
-        nftx.mint(VAULT_ID,list, 0);
+        nftx.mint(VAULT_ID, list, 0);
+
+        require(maskToken.balanceOf(address(this)) == ONE_MASK_TOKEN, "no mask token received from nftx");
 
         address[] memory path = new address[](2);
         path[0] = address(maskToken);
         path[1] = weth;
 
-        uint minPrice = currentFloorPrice();
+        uint price = _currentFloorPrice();
 
-        sushiRouter.swapTokensForExactTokens(ONE_MASK_TOKEN, minPrice, path, address(this), block.timestamp+1);
+        sushiRouter.swapTokensForExactTokens(price, ONE_MASK_TOKEN, path, address(this), block.timestamp+1);
 
+        ERC20(weth).transferFrom(msg.sender, address(this), rmul(price, payoutRate));
+    }
+
+    function setPayoutRate(uint payoutRate_) public {
+        require(msg.sender == owner, "msg.sender not owner");
+        payoutRate = payoutRate_;
+    }
+
+    function payout() public {
+        require(msg.sender == owner);
+        ERC20(weth).transferFrom(address(this), owner, ERC20(weth).balanceOf(address(this)));
     }
 }

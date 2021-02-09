@@ -4,6 +4,24 @@ import "ds-test/test.sol";
 
 import "./mask_flipper.sol";
 
+interface SushiRouterLike {
+    function swapExactETHForTokens(uint amountOut, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
+}
+
+interface NFTXLike {
+    function swapExactETHForTokens(uint amountOut, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
+    function redeem(uint vaultId, uint256 amount) external;
+}
+
+interface ERC721Like {
+    function tokenOfOwnerByIndex(address owner, uint idx) external returns(uint);
+}
+
+interface ERC20Like {
+    function balanceOf(address usr) external returns(uint);
+}
+
+// RPC Test for Mainnet
 contract MaskFlipperTest is DSTest {
     MaskFlipper flipper;
     address constant MASK_TOKEN = 0x0fe629d1E84E171f8fF0C1Ded2Cc2221Caa48a3f;
@@ -17,13 +35,48 @@ contract MaskFlipperTest is DSTest {
         flipper = new MaskFlipper(NFTX, SUSHI_ROUTER, ERC721_HASHMASKS, MASK_TOKEN, WETH);
     }
 
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return 0x150b7a02;
+    }
+
+    function setUpHashMask() public returns(uint) {
+        address[] memory path = new address[](2);
+        path[0] = address(WETH);
+        path[1] = address(MASK_TOKEN);
+        SushiRouterLike(SUSHI_ROUTER).swapExactETHForTokens{value:1 ether}(1, path, address(this), now + 1 minutes);
+
+        ERC20(MASK_TOKEN).approve(NFTX, flipper.ONE_MASK_TOKEN());
+
+        // redeem NFT
+        NFTXLike(NFTX).redeem(flipper.VAULT_ID(), 1);
+
+        return ERC721Like(ERC721_HASHMASKS).tokenOfOwnerByIndex(address(this), 0);
+
+    }
+
     function testCurrentFloorPrice() public {
         uint price = flipper.currentFloorPrice();
         assertTrue(price > 0.2 ether);
         assertTrue(price < 2 ether);
     }
 
-    function test_basic_sanity() public {
-        assertTrue(true);
+    function testFlipMask() public {
+        uint nftID = setUpHashMask();
+        // test contract should own mask
+        assertEq(ERC721(ERC721_HASHMASKS).ownerOf(nftID), address(this));
+
+        ERC721(flipper.hashmasks()).approve(address(flipper), nftID);
+
+        flipper.flipMask(nftID);
+
+        uint balance = ERC20Like(WETH).balanceOf(address(this));
+
+        emit log_named_uint("balance", balance);
+        assertTrue(false);
     }
 }
