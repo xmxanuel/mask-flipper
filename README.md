@@ -19,7 +19,7 @@ All this is happening in one transaction.
 Mask Flipper uses dapp.tools for development. Please install the dapp client.
 
 ## Run RPC tests
-
+The RPC test is using the deployed mainnet contracts of NFTX, HashMasks and Sushiswap.
 install dependencies
 ```
 dapp update
