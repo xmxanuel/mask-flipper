@@ -18,7 +18,7 @@ interface SushiRouter {
     external
     returns (uint[] memory amounts);
 
-    function getAmountsOut(uint256 amount, address[] calldata path) external view returns(uint);
+    function getAmountsOut(uint256 amount, address[] calldata path) external view returns(uint[] memory);
 
     function swapTokensForExactTokens(
         uint amountOut,
@@ -43,7 +43,6 @@ contract MaskFlipper {
         require(y == 0 || (z = x * y) / y == x, "safe-mul-failed");
     }
 
-
     NFTX public nftx;
     SushiRouter public sushiRouter;
     ERC721 public hashmasks;
@@ -53,7 +52,6 @@ contract MaskFlipper {
     uint public fee = ONE;
 
     address public owner;
-
 
     constructor(address nftx_, address sushiRouter_, address hashmasks_, address maskToken_, address weth_) public {
         owner = msg.sender;
@@ -72,7 +70,7 @@ contract MaskFlipper {
         path[0] = address(maskToken);
         path[1] = address(weth);
 
-        return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path);
+        return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path)[0];
     }
 
     function flipMask(uint nftID) public {
