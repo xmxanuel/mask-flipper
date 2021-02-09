@@ -2,13 +2,13 @@
 
 Flip a hashmask against the floor price in NFTX.
 
-[Hashmasks](https://www.thehashmasks.com/)
+- [Hashmasks](https://www.thehashmasks.com/)
 
-[NFTX](https://nftx.org/#/)
+- [NFTX](https://nftx.org/#/)
 
 
 ## How does it work?
-The mask flipper contract takes a hash mask from the user and moves it into the NFTX hashmask pool. The received mask token is swapped on sushi-swap for WETH. Afterwards the WETTH is paid out to the user.
+The mask flipper contract takes a hash mask from the user and moves it into the NFTX hashmask pool. The received mask token is swapped on sushi-swap for WETH. Afterwards the WETH is paid out to the user.
 
 All this is happening in one transaction.
 
