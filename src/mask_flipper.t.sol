@@ -31,6 +31,23 @@ contract MaskFlipperTest is DSTest {
     function safeMul(uint x, uint y) public pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x, "safe-mul-failed");
     }
+    function rdiv(uint x, uint y) public pure returns (uint z) {
+        require(y > 0, "division by zero");
+        z = safeAdd(safeMul(x, ONE), y / 2) / y;
+    }
+    function safeAdd(uint x, uint y) public pure returns (uint z) {
+        require((z = x + y) >= x, "safe-add-failed");
+    }
+
+    function safeSub(uint x, uint y) public pure returns (uint z) {
+        require((z = x - y) <= x, "safe-sub-failed");
+    }
+    function rdivup(uint x, uint y) internal pure returns (uint z) {
+        require(y > 0, "division by zero");
+        // always rounds up
+        z = safeAdd(safeMul(x, ONE), safeSub(y, 1)) / y;
+    }
+
 
     MaskFlipper flipper;
     // mainnet contracts
@@ -66,7 +83,6 @@ contract MaskFlipperTest is DSTest {
         NFTXLike(NFTX).redeem(flipper.VAULT_ID(), 1);
 
         return ERC721Like(ERC721_HASHMASKS).tokenOfOwnerByIndex(address(this), 0);
-
     }
 
     function testCurrentFloorPrice() public {
@@ -75,7 +91,7 @@ contract MaskFlipperTest is DSTest {
         assertTrue(price < 2 ether);
     }
 
-    function testFlipMask() public {
+    function flipMask() public returns(uint balance) {
         uint expectedMinBalance = flipper.currentFloorPrice();
         uint nftID = setUpHashMask();
         // test contract should own a mask
@@ -88,5 +104,25 @@ contract MaskFlipperTest is DSTest {
         uint balance = ERC20Like(WETH).balanceOf(address(this));
 
         assertTrue(balance >= expectedMinBalance);
+        return balance;
+    }
+
+    function testFlipMask() public {
+        flipMask();
+    }
+
+    function testPayoutRate() public {
+        uint payoutRate = 0.995 * 10**27;
+        flipper.setPayoutRate(payoutRate);
+        uint balance = flipMask();
+
+        uint fees = safeSub(rmul(rdivup(balance, payoutRate), ONE), balance);
+
+        assertEq(ERC20Like(WETH).balanceOf(address(flipper)), fees);
+
+        uint preBalance = ERC20Like(WETH).balanceOf(address(this));
+
+        flipper.payout();
+        assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
     }
 }

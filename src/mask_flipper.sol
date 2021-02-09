@@ -19,7 +19,6 @@ interface ERC20 {
 
 interface SushiRouter {
     function getAmountsOut(uint256 amount, address[] calldata path) external view returns(uint[] memory);
-
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -49,8 +48,8 @@ contract MaskFlipper {
     ERC20 public maskToken;
     ERC20 public weth;
 
-    // default 100% payout => no fee
-    // denominated in RAY (10^27)
+    // percentage of WETH send back to the msg.sender denominated in RAY (10^27)
+    // default 100%
     uint public payoutRate = ONE;
 
     address public owner;
