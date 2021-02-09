@@ -28,14 +28,14 @@ interface SushiRouter {
         uint deadline) external returns (uint[] memory amounts);
 }
 
-import "ds-test/test.sol";
-contract MaskFlipper is DSTest {
+contract MaskFlipper {
+    // constants
     uint constant public ONE = 10**27;
     uint constant public ONE_MASK_TOKEN = 1 ether;
-    // Hashmasks vault id
+    // hashmasks vault id
     uint constant public VAULT_ID = 20;
 
-    //math
+    //math functions
     function rmul(uint x, uint y) public pure returns (uint z) {
         z = safeMul(x, y) / ONE;
     }
@@ -86,10 +86,8 @@ contract MaskFlipper is DSTest {
 
         // move nft into NFTX pool
         hashmasks.approve(address(nftx), nftID);
-
         uint256[] memory list = new uint256[](1);
         list[0] = nftID;
-
         nftx.mint(VAULT_ID, list, 0);
 
         require(maskToken.balanceOf(address(this)) == ONE_MASK_TOKEN, "no mask token received from nftx");
@@ -99,11 +97,10 @@ contract MaskFlipper is DSTest {
         path[1] = address(weth);
 
         uint wantPrice = _currentFloorPrice();
-
         uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, 0, path, address(this), block.timestamp+1)[1];
-
         require(price >= wantPrice, "received WETH amount from sushi-swap too low");
 
+        // transfer weth to sender
         weth.transferFrom(address(this), msg.sender, rmul(price, payoutRate));
     }
 
