@@ -1,4 +1,4 @@
 all    :; dapp build
 clean  :; dapp clean
-test   :; dapp test
+test   :; ./bin/test.sh
 deploy :; dapp create MaskFlipper
