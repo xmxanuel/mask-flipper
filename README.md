@@ -8,7 +8,10 @@ Flip a hashmask against the floor price in NFTX.
 
 
 ## How does it work?
-The mask flipper contract takes a hash mask from the user and moves it into the NFTX hashmask pool. The received mask token is swapped on sushi-swap for WETH. Afterwards the WETH is paid out to the user.
+- a hashmasks NFT can be transfered into the contract
+- the contract flips the NFT for a mask token 
+- the received mask token is swapped on sushi-swap for WETH
+- WETH is paid out to the user
 
 All this is happening in one transaction.
 
