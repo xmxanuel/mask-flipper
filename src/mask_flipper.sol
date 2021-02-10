@@ -51,7 +51,8 @@ contract MaskFlipper {
     // percentage of WETH send back to the msg.sender denominated in RAY (10^27)
     // default 100%
     uint public payoutRate = ONE;
-
+    // amountOutMin tolerance from floor price
+    uint public tolerance = ONE;
     address public owner;
 
     constructor(address nftx_, address sushiRouter_, address hashmasks_, address maskToken_, address weth_) public {
@@ -89,23 +90,28 @@ contract MaskFlipper {
         list[0] = nftID;
         nftx.mint(VAULT_ID, list, 0);
 
-        require(maskToken.balanceOf(address(this)) == ONE_MASK_TOKEN, "no mask token received from nftx");
+        require(maskToken.balanceOf(address(this)) == ONE_MASK_TOKEN, "no-mask-token");
 
         address[] memory path = new address[](2);
         path[0] = address(maskToken);
         path[1] = address(weth);
 
         uint wantPrice = _currentFloorPrice();
-        uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, 0, path, address(this), block.timestamp+1)[1];
-        require(price >= wantPrice, "received WETH amount from sushi-swap too low");
+        uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, rmul(wantPrice, tolerance), path, address(this), block.timestamp+1)[1];
 
         // transfer weth to sender
         weth.transferFrom(address(this), msg.sender, rmul(price, payoutRate));
     }
 
-    function setPayoutRate(uint payoutRate_) public {
+    function file(bytes32 name, uint value) public {
         require(msg.sender == owner, "msg.sender not owner");
-        payoutRate = payoutRate_;
+        if(name == "payoutRate") {
+            payoutRate = value;
+        } else if(name == "tolerance") {
+            tolerance = value;
+        } else {
+            revert("unknown-config");
+        }
     }
 
     function payout() public {

@@ -113,7 +113,7 @@ contract MaskFlipperTest is DSTest {
 
     function testPayoutRate() public {
         uint payoutRate = 0.995 * 10**27;
-        flipper.setPayoutRate(payoutRate);
+        flipper.file("payoutRate", payoutRate);
         uint balance = flipMask();
 
         uint fees = safeSub(rmul(rdivup(balance, payoutRate), ONE), balance);
