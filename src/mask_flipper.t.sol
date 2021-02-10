@@ -21,6 +21,10 @@ interface ERC20Like {
     function balanceOf(address usr) external returns(uint);
 }
 
+interface WETHLike {
+    function deposit() external payable;
+}
+
 // RPC Test for Mainnet
 contract MaskFlipperTest is DSTest {
     // math
@@ -75,7 +79,7 @@ contract MaskFlipperTest is DSTest {
         address[] memory path = new address[](2);
         path[0] = address(WETH);
         path[1] = address(MASK_TOKEN);
-        SushiRouterLike(SUSHI_ROUTER).swapExactETHForTokens{value:1 ether}(1, path, address(this), now + 1 minutes);
+        SushiRouterLike(SUSHI_ROUTER).swapExactETHForTokens{value:1 ether}(1, path, address(this), now + 1);
 
         ERC20(MASK_TOKEN).approve(NFTX, flipper.ONE_MASK_TOKEN());
 
@@ -83,6 +87,11 @@ contract MaskFlipperTest is DSTest {
         NFTXLike(NFTX).redeem(flipper.VAULT_ID(), 1);
 
         return ERC721Like(ERC721_HASHMASKS).tokenOfOwnerByIndex(address(this), 0);
+    }
+
+    function setUpWETH() public {
+        uint wethIn = 2 ether;
+        WETHLike(WETH).deposit.value(wethIn)();
     }
 
     function testCurrentFloorPrice() public {
@@ -124,5 +133,12 @@ contract MaskFlipperTest is DSTest {
 
         flipper.payout();
         assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
+    }
+
+    function testBuyMask() public {
+        setUpWETH();
+        ERC20(WETH).approve(address(flipper), uint(-1));
+        uint nftID = flipper.buyRandomMask();
+        assertEq(ERC721(ERC721_HASHMASKS).ownerOf(nftID), address(this));
     }
 }
