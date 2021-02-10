@@ -98,6 +98,7 @@ contract MaskFlipper {
     }
 
     // returns the current floor price minus the fee in WETH
+    // amount of WETH received for one hashmask
     function currentFloor() public view returns(uint) {
         return rmul(_currentFloor(), flipMaskRate);
     }
@@ -110,7 +111,8 @@ contract MaskFlipper {
         return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path)[1];
     }
 
-    function currentBuyPrice() public returns(uint) {
+    // amount of WETH required for one hashmask
+    function currentGetMaskPrice() public returns(uint) {
         return rmul(_currentMaskTokenPrice(), getMaskRate);
     }
 

@@ -149,8 +149,8 @@ contract MaskFlipperTest is DSTest {
     function testGetMaskWithRate() public {
         uint getMaskRate = 1.005 * 10**27;
         flipper.file("getMaskRate", getMaskRate);
-        uint currentBuyPrice = flipper.currentBuyPrice();
-        uint fees = safeSub(currentBuyPrice, rmul(rdivup(currentBuyPrice, getMaskRate), ONE));
+        uint currentGetMaskPrice = flipper.currentGetMaskPrice();
+        uint fees = safeSub(currentGetMaskPrice, rmul(rdivup(currentGetMaskPrice, getMaskRate), ONE));
         getRandomMask();
 
         uint preBalance = ERC20Like(WETH).balanceOf(address(this));
