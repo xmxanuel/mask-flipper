@@ -61,10 +61,10 @@ contract MaskFlipper {
 
     // percentage of WETH send back to the msg.sender denominated in RAY (10^27)
     // default 100% (max value)
-    uint public payoutRate = ONE;
-    // percentage from the floor price required from the user for buyRandomMask
+    uint public flipMaskRate = ONE;
+    // percentage from the floor price required from the user for getRandomMask
     // min value 100%
-    uint public buyRate = ONE;
+    uint public getMaskRate = ONE;
     // amountOutMin tolerance from floor price in sushi Swap
     // default 100% (no tolerance)
     uint public tolerance = ONE;
@@ -85,24 +85,24 @@ contract MaskFlipper {
 
     function file(bytes32 name, uint value) public {
         require(msg.sender == owner, "msg.sender not owner");
-        if(name == "payoutRate") {
-            payoutRate = value;
+        if(name == "flipMaskRate") {
+            flipMaskRate = value;
         } else if(name == "tolerance") {
             tolerance = value;
-        }else if(name == "buyRate") {
+        }else if(name == "getMaskRate") {
             require(value >= ONE);
-            buyRate = value;
+            getMaskRate = value;
         } else {
             revert("unknown-config");
         }
     }
 
     // returns the current floor price minus the fee in WETH
-    function currentFloorPrice() public view returns(uint) {
-        return rmul(_currentFloorPrice(), payoutRate);
+    function currentFloor() public view returns(uint) {
+        return rmul(_currentFloor(), flipMaskRate);
     }
 
-    function _currentFloorPrice() internal view returns (uint) {
+    function _currentFloor() internal view returns (uint) {
         address[] memory path = new address[](2);
         path[0] = address(maskToken);
         path[1] = address(weth);
@@ -111,7 +111,7 @@ contract MaskFlipper {
     }
 
     function currentBuyPrice() public returns(uint) {
-        return rmul(_currentMaskTokenPrice(), buyRate);
+        return rmul(_currentMaskTokenPrice(), getMaskRate);
     }
 
     function _currentMaskTokenPrice() internal returns(uint) {
@@ -122,8 +122,7 @@ contract MaskFlipper {
         return sushiRouter.getAmountsIn(ONE_MASK_TOKEN, path)[0];
     }
 
-    // flip a mask against the current floor price in NFTX
-    // payout in WETH
+    // flip a mask against the current floor price in NFTX and receive WETH back
     function flipMask(uint nftID) public returns(uint payoutAmount){
         require(hashmasks.ownerOf(nftID) == msg.sender, "msg.sender is not nft owner");
         hashmasks.transferFrom(msg.sender, address(this), nftID);
@@ -140,18 +139,18 @@ contract MaskFlipper {
         path[0] = address(maskToken);
         path[1] = address(weth);
 
-        uint wantPrice = _currentFloorPrice();
+        uint wantPrice = _currentFloor();
         // swap MASK token for WETH
         uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, rmul(wantPrice, tolerance), path, address(this), block.timestamp+1)[1];
 
         // transfer WETH to msg.sender
-        payoutAmount = rmul(price, payoutRate);
+        payoutAmount = rmul(price, flipMaskRate);
         weth.transferFrom(address(this), msg.sender, payoutAmount);
     }
 
-    // buy a random mask with WETH
-    function buyRandomMask() public returns(uint nftID) {
-        uint requiredAmount = rmul(_currentMaskTokenPrice(), buyRate);
+    // get a random mask with WETH
+    function getRandomMask() public returns(uint nftID) {
+        uint requiredAmount = rmul(_currentMaskTokenPrice(), getMaskRate);
         weth.transferFrom(msg.sender, address(this), requiredAmount);
 
         address[] memory path = new address[](2);
@@ -170,8 +169,7 @@ contract MaskFlipper {
         hashmasks.transferFrom(address(this), msg.sender, nftID);
     }
 
-    // payout fees
-    function payout() public {
+    function redeem() public {
         require(msg.sender == owner);
         weth.transferFrom(address(this), owner, weth.balanceOf(address(this)));
     }

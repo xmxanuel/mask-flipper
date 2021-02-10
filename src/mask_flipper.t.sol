@@ -95,13 +95,13 @@ contract MaskFlipperTest is DSTest {
     }
 
     function testCurrentFloorPrice() public {
-        uint price = flipper.currentFloorPrice();
+        uint price = flipper.currentFloor();
         assertTrue(price > 0.2 ether);
         assertTrue(price < 2 ether);
     }
 
     function flipMask() public returns(uint balance) {
-        uint expectedMinBalance = flipper.currentFloorPrice();
+        uint expectedMinBalance = flipper.currentFloor();
         uint nftID = setUpHashMask();
         // test contract should own a mask
         assertEq(ERC721(flipper.hashmasks()).ownerOf(nftID), address(this));
@@ -120,42 +120,42 @@ contract MaskFlipperTest is DSTest {
         flipMask();
     }
 
-    function testPayoutRate() public {
-        uint payoutRate = 0.995 * 10**27;
-        flipper.file("payoutRate", payoutRate);
+    function testflipMaskRate() public {
+        uint flipMaskRate = 0.995 * 10**27;
+        flipper.file("flipMaskRate", flipMaskRate);
         uint balance = flipMask();
 
-        uint fees = safeSub(rmul(rdivup(balance, payoutRate), ONE), balance);
+        uint fees = safeSub(rmul(rdivup(balance, flipMaskRate), ONE), balance);
 
         assertEq(ERC20Like(WETH).balanceOf(address(flipper)), fees);
 
         uint preBalance = ERC20Like(WETH).balanceOf(address(this));
 
-        flipper.payout();
+        flipper.redeem();
         assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
     }
 
-    function buyMask() public {
+    function getRandomMask() public {
         setUpWETH();
         ERC20(WETH).approve(address(flipper), uint(-1));
-        uint nftID = flipper.buyRandomMask();
+        uint nftID = flipper.getRandomMask();
         assertEq(ERC721(ERC721_HASHMASKS).ownerOf(nftID), address(this));
     }
 
-    function testBuyMask() public {
-        buyMask();
+    function testGetMask() public {
+        getRandomMask();
     }
 
-    function testBuyMaskBuyRate() public {
-        uint buyRate = 1.005 * 10**27;
-        flipper.file("buyRate", buyRate);
+    function testGetMaskWithRate() public {
+        uint getMaskRate = 1.005 * 10**27;
+        flipper.file("getMaskRate", getMaskRate);
         uint currentBuyPrice = flipper.currentBuyPrice();
-        uint fees = safeSub(currentBuyPrice, rmul(rdivup(currentBuyPrice, buyRate), ONE));
-        buyMask();
+        uint fees = safeSub(currentBuyPrice, rmul(rdivup(currentBuyPrice, getMaskRate), ONE));
+        getRandomMask();
 
         uint preBalance = ERC20Like(WETH).balanceOf(address(this));
 
-        flipper.payout();
+        flipper.redeem();
         assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
     }
 }
