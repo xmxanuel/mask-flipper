@@ -135,10 +135,27 @@ contract MaskFlipperTest is DSTest {
         assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
     }
 
-    function testBuyMask() public {
+    function buyMask() public {
         setUpWETH();
         ERC20(WETH).approve(address(flipper), uint(-1));
         uint nftID = flipper.buyRandomMask();
         assertEq(ERC721(ERC721_HASHMASKS).ownerOf(nftID), address(this));
+    }
+
+    function testBuyMask() public {
+        buyMask();
+    }
+
+    function testBuyMaskBuyRate() public {
+        uint buyRate = 1.005 * 10**27;
+        flipper.file("buyRate", buyRate);
+        uint currentBuyPrice = flipper.currentBuyPrice();
+        uint fees = safeSub(currentBuyPrice, rmul(rdivup(currentBuyPrice, buyRate), ONE));
+        buyMask();
+
+        uint preBalance = ERC20Like(WETH).balanceOf(address(this));
+
+        flipper.payout();
+        assertEq(ERC20Like(WETH).balanceOf(address(this)), safeAdd(preBalance, fees));
     }
 }

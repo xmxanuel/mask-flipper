@@ -110,8 +110,8 @@ contract MaskFlipper {
         return sushiRouter.getAmountsOut(ONE_MASK_TOKEN, path)[1];
     }
 
-    function currentBuyPrice() internal returns(uint) {
-        return(_currentMaskTokenPrice(), buyRate);
+    function currentBuyPrice() public returns(uint) {
+        return rmul(_currentMaskTokenPrice(), buyRate);
     }
 
     function _currentMaskTokenPrice() internal returns(uint) {
