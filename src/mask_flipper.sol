@@ -123,11 +123,12 @@ contract MaskFlipper {
     }
 
     // flip a mask against the current floor price in NFTX
+    // payout in WETH
     function flipMask(uint nftID) public returns(uint payoutAmount){
         require(hashmasks.ownerOf(nftID) == msg.sender, "msg.sender is not nft owner");
         hashmasks.transferFrom(msg.sender, address(this), nftID);
 
-        // move nft into NFTX pool
+        // move NFT into NFTX pool
         hashmasks.approve(address(nftx), nftID);
         uint256[] memory list = new uint256[](1);
         list[0] = nftID;
@@ -140,13 +141,15 @@ contract MaskFlipper {
         path[1] = address(weth);
 
         uint wantPrice = _currentFloorPrice();
+        // swap MASK token for WETH
         uint price = sushiRouter.swapExactTokensForTokens(ONE_MASK_TOKEN, rmul(wantPrice, tolerance), path, address(this), block.timestamp+1)[1];
 
-        // transfer weth to sender
+        // transfer WETH to msg.sender
         payoutAmount = rmul(price, payoutRate);
         weth.transferFrom(address(this), msg.sender, payoutAmount);
     }
 
+    // buy a random mask with WETH
     function buyRandomMask() public returns(uint nftID) {
         uint requiredAmount = rmul(_currentMaskTokenPrice(), buyRate);
         weth.transferFrom(msg.sender, address(this), requiredAmount);
@@ -155,17 +158,19 @@ contract MaskFlipper {
         path[0] = address(weth);
         path[1] = address(maskToken);
 
+        // swap WETH for MASK token
         sushiRouter.swapTokensForExactTokens(ONE_MASK_TOKEN, requiredAmount, path, address(this), block.timestamp+1);
 
-        // redeem one NFT
+        // redeem one NFT with mask token
         nftx.redeem(VAULT_ID, 1);
 
         nftID = hashmasks.tokenOfOwnerByIndex(address(this), 0);
 
-        // send nft to owner
+        // send nft to msg.sender
         hashmasks.transferFrom(address(this), msg.sender, nftID);
     }
 
+    // payout fees
     function payout() public {
         require(msg.sender == owner);
         weth.transferFrom(address(this), owner, weth.balanceOf(address(this)));
