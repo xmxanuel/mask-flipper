@@ -1,7 +1,5 @@
 pragma solidity ^0.6.7;
 
-import "../lib/ds-test/src/test.sol";
-
 interface NFTX  {
     function mint(uint256 vaultId, uint256[] calldata nftIds, uint256 d2Amount) external;
     function redeem(uint vaultId, uint256 amount) external;
@@ -159,7 +157,7 @@ contract MaskFlipper {
         path[0] = address(weth);
         path[1] = address(maskToken);
 
-        // swap WETH for MASK token
+        // swap WETH for mask token
         sushiRouter.swapTokensForExactTokens(ONE_MASK_TOKEN, requiredAmount, path, address(this), block.timestamp+1);
 
         // redeem one NFT with mask token
